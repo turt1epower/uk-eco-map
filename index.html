@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>학교 생태지도</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; margin:0; }
+  .app { display:flex; height:100vh; }
+  .map-wrap { position:relative; flex:1; overflow:auto; background:#f0f0f0; display:flex; align-items:center; justify-content:center; }
+  .map-img { max-width:100%; height:auto; display:block; position:relative; }
+  .marker {
+    position:absolute;
+    transform:translate(-50%,-100%);
+    width:28px; height:28px; border-radius:50%;
+    background:rgba(34,139,34,0.95); border:2px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; cursor:pointer;
+  }
+  .marker:after { content:""; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%); width:2px; height:8px; background:rgba(34,139,34,0.95); }
+  aside.panel {
+    width:320px; max-width:40%; background:#fff; border-left:1px solid #e0e0e0; padding:16px; box-sizing:border-box;
+  }
+  .panel h2 { margin:0 0 8px 0; font-size:18px; }
+  .panel img { width:100%; height:auto; border-radius:6px; margin-bottom:8px; }
+  .close-btn { background:#eee; border:0; padding:6px 8px; border-radius:4px; cursor:pointer; }
+  .hint { color:#666; font-size:14px; }
+  @media(max-width:700px){ .panel{ position:fixed; right:0; top:0; bottom:0; z-index:30; width:90%; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="map-wrap" id="mapWrap">
+    <!-- map/ 폴더에 올려둔 지도 이미지 파일명으로 바꿔 주세요 -->
+    <img id="mapImg" class="map-img" src="map/school-map.jpg" alt="학교 지도" />
+  </div>
+
+  <aside class="panel" id="panel" aria-hidden="true">
+    <div id="panelContent">
+      <button class="close-btn" id="closeBtn">닫기</button>
+      <div id="details">
+        <p class="hint">지도에서 식물 이름(녹색 점)을 클릭하세요.</p>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+(async function(){
+  const dataUrl = './data/plants.json';
+  let plants = [];
+  try {
+    const res = await fetch(dataUrl);
+    plants = await res.json();
+  } catch(e){
+    console.error('plants.json 로딩 실패', e);
+    document.getElementById('details').innerText = '식물 데이터 로딩 실패';
+    return;
+  }
+
+  const mapWrap = document.getElementById('mapWrap');
+  const panel = document.getElementById('panel');
+  const details = document.getElementById('details');
+  const closeBtn = document.getElementById('closeBtn');
+
+  plants.forEach(p=>{
+    const m = document.createElement('button');
+    m.className = 'marker';
+    m.type = 'button';
+    m.title = p.name;
+    m.style.left = p.x + '%';
+    m.style.top = p.y + '%';
+    m.dataset.id = p.id;
+    m.textContent = p.label || '●';
+    m.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      showPlant(p);
+    });
+    mapWrap.appendChild(m);
+  });
+
+  mapWrap.addEventListener('click', ()=> hidePanel());
+  closeBtn.addEventListener('click', ()=> hidePanel());
+
+  function showPlant(p){
+    panel.setAttribute('aria-hidden','false');
+    details.innerHTML = `
+      <h2>${escapeHtml(p.name)}</h2>
+      <img src="${escapeHtml(p.photo)}" alt="${escapeHtml(p.name)} 사진" onerror="this.style.display='none'"/>
+      <p>${escapeHtml(p.description || '설명이 아직 없습니다.')}</p>
+    `;
+  }
+  function hidePanel(){
+    panel.setAttribute('aria-hidden','true');
+    details.innerHTML = '<p class="hint">지도에서 식물 이름(녹색 점)을 클릭하세요.</p>';
+  }
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+})();
+</script>
+</body>
+</html>
