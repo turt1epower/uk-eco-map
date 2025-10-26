@@ -1,7 +1,7 @@
 import streamlit as st
 from pathlib import Path
 import json
-import base64
+import requests
 import mimetypes
 
 st.set_page_config(page_title="학교 생태지도", layout="wide")
@@ -10,14 +10,12 @@ ROOT = Path(__file__).resolve().parents[0]
 DATA_FILE = ROOT / "data" / "plants.json"
 MAP_DIR = ROOT / "map"
 
-# choose map image: pick largest image file in map/ if any, else fallback to school-map.jpg
 def choose_map_file():
     exts = {".jpg", ".jpeg", ".png", ".webp", ".svg"}
     if MAP_DIR.exists():
         imgs = [p for p in MAP_DIR.iterdir() if p.suffix.lower() in exts and p.is_file()]
         if imgs:
-            imgs_sorted = sorted(imgs, key=lambda p: p.stat().st_size, reverse=True)
-            return imgs_sorted[0]
+            return sorted(imgs, key=lambda p: p.stat().st_size, reverse=True)[0]
     return MAP_DIR / "school-map.jpg"
 
 MAP_FILE = choose_map_file()
@@ -28,146 +26,122 @@ try:
 except Exception:
     plants = []
 
-# Build a mapping of plant id -> photo data URI (or absolute URL) so the embedded HTML can display images
-photo_map = {}
-for p in plants:
-    pid = p.get("id")
-    photo = p.get("photo") or ""
-    if not pid:
-        continue
-    # If photo is already an absolute URL, use it directly
-    if photo.startswith("http://") or photo.startswith("https://") or photo.startswith("data:"):
-        photo_map[pid] = photo
-        continue
-    # try repo-relative path
-    src = (ROOT / photo)
-    if not src.exists():
-        # try common folders
-        alt = ROOT / "photo" / Path(photo).name
-        if alt.exists():
-            src = alt
-    if src.exists():
+st.title("학교 생태지도")
+
+# helper: resolve photo path and return info
+def resolve_photo_paths(photo_field):
+    tried = []
+    # absolute/http/data: return as-is
+    if not photo_field:
+        return None, tried, "empty"
+    if photo_field.startswith("http://") or photo_field.startswith("https://") or photo_field.startswith("data:"):
+        return photo_field, tried, "url_or_data"
+    # repo-relative path
+    p1 = ROOT / photo_field
+    tried.append(str(p1))
+    if p1.exists():
+        return p1, tried, "file"
+    # try photo/ folder
+    p2 = ROOT / "photo" / Path(photo_field).name
+    tried.append(str(p2))
+    if p2.exists():
+        return p2, tried, "file"
+    # try static_photos
+    p3 = ROOT / "static_photos" / Path(photo_field).name
+    tried.append(str(p3))
+    if p3.exists():
+        return p3, tried, "file"
+    return None, tried, "not_found"
+
+# layout
+col_map, col_panel = st.columns([3,1])
+
+with col_map:
+    if MAP_FILE.exists():
         try:
-            b = src.read_bytes()
-            mime, _ = mimetypes.guess_type(str(src))
-            if not mime:
-                mime = "image/jpeg"
-            data_uri = "data:{};base64,".format(mime) + base64.b64encode(b).decode("ascii")
-            photo_map[pid] = data_uri
-        except Exception:
-            # leave absent; frontend will show warning
-            pass
+            st.image(str(MAP_FILE), use_column_width=True)
+        except Exception as e:
+            st.error("지도 이미지 표시 실패: " + str(e))
+    else:
+        st.warning("map 폴더에 지도 이미지가 없습니다.")
 
-# prepare map image data url if available
-map_data_url = None
-if MAP_FILE.exists():
+with col_panel:
+    st.header("식물 목록")
+    names = [f"{p.get('name','(이름없음)')} ({p.get('id')})" for p in plants]
+    if names:
+        idx = st.selectbox("식물 선택", list(range(len(names))), format_func=lambda i: names[i])
+        p = plants[idx]
+        st.subheader(p.get("name",""))
+        photo_field = p.get("photo","") or ""
+        resolved, tried, kind = resolve_photo_paths(photo_field)
+
+        st.markdown("**디버그 정보**")
+        st.text(f"photo field: {photo_field}")
+        st.text(f"resolved type: {kind}")
+        st.text("tried paths:")
+        for t in tried:
+            st.text("  " + t)
+
+        img_displayed = False
+        if kind == "url_or_data":
+            try:
+                # for URLs, attempt server fetch first to show errors
+                if photo_field.startswith("http"):
+                    r = requests.get(photo_field, timeout=5)
+                    if r.status_code == 200 and len(r.content) > 0:
+                        st.image(r.content, use_column_width=True)
+                        img_displayed = True
+                    else:
+                        st.info(f"원격 이미지 요청 실패: HTTP {r.status_code}")
+                else:
+                    # data: uri - Streamlit supports it via bytes decode
+                    header, b64 = photo_field.split(",",1)
+                    import base64
+                    data = base64.b64decode(b64)
+                    st.image(data, use_column_width=True)
+                    img_displayed = True
+            except Exception as e:
+                st.info("원격/data 이미지 로드 실패: " + str(e))
+        elif kind == "file" and isinstance(resolved, Path):
+            try:
+                size = resolved.stat().st_size
+                st.text(f"파일 존재: {resolved} ({size//1024} KB)")
+                # read bytes and render
+                b = resolved.read_bytes()
+                st.image(b, use_column_width=True)
+                img_displayed = True
+            except Exception as e:
+                st.info("로컬 파일 읽기 실패: " + str(e))
+        else:
+            st.info("사진 파일이 누락되었거나 경로가 잘못되었습니다.")
+
+        st.write(p.get("description","설명이 없습니다."))
+
+        # if not displayed, show helpful next steps
+        if not img_displayed:
+            st.markdown("**다음 확인사항**")
+            st.markdown("- repo에 사진이 커밋되어 있는지: `git ls-files | grep -E \"photo|static_photos\"`")
+            st.markdown("- 파일명 대소문자 일치 여부(리눅스는 구분)")
+            st.markdown("- 필요하면 `scripts/fix_photos.py`로 재인코딩 후 `static_photos/`에 넣기")
+            st.markdown("- 외부 URL을 사용하려면 plants.json의 photo에 절대 URL 넣기")
+    else:
+        st.info("등록된 식물이 없습니다.")
+
+# 아래에 서버에서 파일 존재 목록을 간단히 노출 (디버그용)
+st.markdown("---")
+st.markdown("**서버에 존재하는 관련 폴더(최대 몇 항목)**")
+def list_some(p):
+    if not p.exists():
+        return f"{p} (없음)"
     try:
-        b = MAP_FILE.read_bytes()
-        mime = "image/jpeg"
-        if MAP_FILE.suffix.lower() == ".png":
-            mime = "image/png"
-        elif MAP_FILE.suffix.lower() == ".svg":
-            mime = "image/svg+xml"
-        map_data_url = f"data:{mime};base64," + base64.b64encode(b).decode("ascii")
-    except Exception:
-        map_data_url = None
+        items = list(p.iterdir())[:20]
+        return "\n".join([f"{it.name}  ({it.stat().st_size//1024} KB)" for it in items]) or "(비어있음)"
+    except Exception as e:
+        return f"읽기 실패: {e}"
 
-# 안전하게 JS에 주입할 JSON 문자열 생성
-plants_json_js = json.dumps(plants, ensure_ascii=False)
-photo_map_js = json.dumps(photo_map, ensure_ascii=False)
-map_data_url_js = json.dumps(map_data_url)  # "null" or quoted string
-
-html = """
-<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>학교 생태지도 (embedded)</title>
-<style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; margin:0; }
-  .app { display:flex; height:100vh; }
-  .map-wrap { position:relative; flex:1; overflow:auto; background:#f0f0f0; display:flex; align-items:center; justify-content:center; padding:12px; }
-  .map-img { max-width:100%; height:auto; display:block; position:relative; cursor:crosshair; }
-  .marker {
-    position:absolute; transform:translate(-50%,-100%);
-    width:28px; height:28px; border-radius:50%;
-    background:rgba(34,139,34,0.95); border:2px solid #fff;
-    box-shadow:0 2px 6px rgba(0,0,0,0.3);
-    display:flex; align-items:center; justify-content:center;
-    color:#fff; font-weight:700; cursor:pointer;
-  }
-  .marker:after { content:""; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%); width:2px; height:8px; background:rgba(34,139,34,0.95); }
-  .panel { width:320px; max-width:40%; background:#fff; border-left:1px solid #e0e0e0; padding:16px; box-sizing:border-box; overflow:auto; }
-  .panel h2 { margin:0 0 8px 0; font-size:18px; }
-  .panel img { width:100%; height:auto; border-radius:6px; margin-bottom:8px; }
-  .hint { color:#666; font-size:14px; }
-  @media(max-width:700px){ .panel{ position:fixed; right:0; top:0; bottom:0; z-index:30; width:90%; } }
-</style>
-</head>
-<body>
-<div style="display:flex; height:100vh;">
-  <div class="map-wrap" id="mapWrap">
-    <img id="mapImg" class="map-img" src=""" + map_data_url_js + """ alt="학교 지도" />
-  </div>
-  <aside class="panel" id="panel">
-    <h2>식물 정보</h2>
-    <div id="details"><p class="hint">지도에서 식물 마커를 클릭하세요.</p></div>
-  </aside>
-</div>
-
-<script>
-(function(){
-  const plants = """ + plants_json_js + """;
-  const photoMap = """ + photo_map_js + """;
-  const mapWrap = document.getElementById('mapWrap');
-  const mapImg = document.getElementById('mapImg');
-  const details = document.getElementById('details');
-
-  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
-
-  function createMarker(p){
-    const m = document.createElement('button');
-    m.className = 'marker';
-    m.type = 'button';
-    m.title = p.name;
-    m.style.left = p.x + '%';
-    m.style.top = p.y + '%';
-    m.dataset.id = p.id;
-    m.textContent = p.label || '●';
-    m.addEventListener('click', (ev)=>{
-      ev.stopPropagation();
-      showPlant(p);
-    });
-    mapWrap.appendChild(m);
-  }
-
-  function showPlant(p){
-    // 우선 photoMap에 data URI가 있는지 확인
-    const pm = photoMap[p.id];
-    const photoSrc = pm || p.photo || '';
-    const photoTag = (photoSrc && photoSrc.length>0) ? ('<img src="'+escapeHtml(photoSrc)+'" alt="'+escapeHtml(p.name)+' 사진" style="max-width:100%;margin-bottom:8px" onerror="this.style.display=\\'none\\';document.getElementById(\\'photoWarn\\').style.display=\\'block\\';"/>') : '';
-    details.innerHTML = '<h3>'+escapeHtml(p.name)+'</h3>'
-      + photoTag
-      + '<div id="photoWarn" style="display:none;color:#c33;font-size:13px;margin-bottom:6px;">사진을 불러오지 못했습니다. (사진 파일이 누락되었거나 경로가 잘못되었습니다)</div>'
-      + '<p>'+escapeHtml(p.description || '설명이 없습니다.')+'</p>';
-  }
-
-  if (mapImg.complete) {
-    plants.forEach(createMarker);
-  } else {
-    mapImg.onload = ()=> plants.forEach(createMarker);
-    mapImg.onerror = ()=> plants.forEach(createMarker);
-  }
-
-  mapWrap.addEventListener('click', ()=> {
-    details.innerHTML = '<p class="hint">지도에서 식물 마커를 클릭하세요.</p>';
-  });
-
-})();
-</script>
-</body>
-</html>
-"""
-# render in Streamlit
-st.components.v1.html(html, height=800, scrolling=True)
+st.text("map/:")
+st.text(list_some(MAP_DIR))
+st.text("photo/:")
+st.text(list_some(ROOT / "photo"))
+st.text("static_photos/:")
+st.text(list_some(ROOT / "static_photos"))
