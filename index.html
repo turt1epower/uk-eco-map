@@ -99,6 +99,39 @@
 
 <script>
 (async function(){
+  // map/ 디렉터리의 인덱스 페이지를 읽어 첫 번째 이미지 파일을 자동으로 선택합니다.
+  async function autoSelectMapImage(){
+    const img = document.getElementById('mapImg');
+    try {
+      const res = await fetch('./map/');
+      if (!res.ok) return;
+      const text = await res.text();
+      const doc = new DOMParser().parseFromString(text, 'text/html');
+      const exts = ['.jpg','.jpeg','.png','.gif','.webp','.svg'];
+      // a 태그 검사
+      const anchors = Array.from(doc.querySelectorAll('a'));
+      for (const a of anchors){
+        const href = a.getAttribute('href');
+        if (!href) continue;
+        const low = href.toLowerCase();
+        if (exts.some(e => low.endsWith(e))){
+          img.src = 'map/' + href;
+          return;
+        }
+      }
+      // img 태그 검사 (만약 서버가 이미지 태그를 포함하면)
+      const imgs = doc.querySelectorAll('img');
+      if (imgs.length){
+        const s = imgs[0].getAttribute('src');
+        if (s) img.src = s.startsWith('http') ? s : ('map/' + s);
+      }
+    } catch(e){
+      console.warn('map 폴더 자동검색 실패', e);
+    }
+  }
+
+  await autoSelectMapImage();
+
   const dataUrl = './data/plants.json';
   let plants = [];
   try {
