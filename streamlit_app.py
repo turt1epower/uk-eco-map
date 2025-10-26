@@ -31,22 +31,18 @@ st.title("학교 생태지도")
 # helper: resolve photo path and return info
 def resolve_photo_paths(photo_field):
     tried = []
-    # absolute/http/data: return as-is
     if not photo_field:
         return None, tried, "empty"
     if photo_field.startswith("http://") or photo_field.startswith("https://") or photo_field.startswith("data:"):
         return photo_field, tried, "url_or_data"
-    # repo-relative path
     p1 = ROOT / photo_field
     tried.append(str(p1))
     if p1.exists():
         return p1, tried, "file"
-    # try photo/ folder
     p2 = ROOT / "photo" / Path(photo_field).name
     tried.append(str(p2))
     if p2.exists():
         return p2, tried, "file"
-    # try static_photos
     p3 = ROOT / "static_photos" / Path(photo_field).name
     tried.append(str(p3))
     if p3.exists():
@@ -59,7 +55,7 @@ col_map, col_panel = st.columns([3,1])
 with col_map:
     if MAP_FILE.exists():
         try:
-            st.image(str(MAP_FILE), use_column_width=True)
+            st.image(str(MAP_FILE), use_container_width=True)
         except Exception as e:
             st.error("지도 이미지 표시 실패: " + str(e))
     else:
@@ -85,20 +81,18 @@ with col_panel:
         img_displayed = False
         if kind == "url_or_data":
             try:
-                # for URLs, attempt server fetch first to show errors
                 if photo_field.startswith("http"):
                     r = requests.get(photo_field, timeout=5)
                     if r.status_code == 200 and len(r.content) > 0:
-                        st.image(r.content, use_column_width=True)
+                        st.image(r.content, use_container_width=True)
                         img_displayed = True
                     else:
                         st.info(f"원격 이미지 요청 실패: HTTP {r.status_code}")
                 else:
-                    # data: uri - Streamlit supports it via bytes decode
                     header, b64 = photo_field.split(",",1)
                     import base64
                     data = base64.b64decode(b64)
-                    st.image(data, use_column_width=True)
+                    st.image(data, use_container_width=True)
                     img_displayed = True
             except Exception as e:
                 st.info("원격/data 이미지 로드 실패: " + str(e))
@@ -106,9 +100,8 @@ with col_panel:
             try:
                 size = resolved.stat().st_size
                 st.text(f"파일 존재: {resolved} ({size//1024} KB)")
-                # read bytes and render
                 b = resolved.read_bytes()
-                st.image(b, use_column_width=True)
+                st.image(b, use_container_width=True)
                 img_displayed = True
             except Exception as e:
                 st.info("로컬 파일 읽기 실패: " + str(e))
@@ -117,7 +110,6 @@ with col_panel:
 
         st.write(p.get("description","설명이 없습니다."))
 
-        # if not displayed, show helpful next steps
         if not img_displayed:
             st.markdown("**다음 확인사항**")
             st.markdown("- repo에 사진이 커밋되어 있는지: `git ls-files | grep -E \"photo|static_photos\"`")
@@ -127,7 +119,7 @@ with col_panel:
     else:
         st.info("등록된 식물이 없습니다.")
 
-# 아래에 서버에서 파일 존재 목록을 간단히 노출 (디버그용)
+# 서버의 폴더 내용 간단 노출 (디버그)
 st.markdown("---")
 st.markdown("**서버에 존재하는 관련 폴더(최대 몇 항목)**")
 def list_some(p):
