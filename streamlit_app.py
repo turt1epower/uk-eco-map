@@ -7,7 +7,21 @@ st.set_page_config(page_title="학교 생태지도", layout="wide")
 
 ROOT = Path(__file__).resolve().parents[0]
 DATA_FILE = ROOT / "data" / "plants.json"
-MAP_FILE = ROOT / "map" / "school-map.jpg"
+MAP_DIR = ROOT / "map"
+
+# choose map image: pick largest image file in map/ if any, else fallback to school-map.jpg
+def choose_map_file():
+    exts = {".jpg", ".jpeg", ".png", ".webp", ".svg"}
+    if MAP_DIR.exists():
+        imgs = [p for p in MAP_DIR.iterdir() if p.suffix.lower() in exts and p.is_file()]
+        if imgs:
+            # pick largest (prefer real upload over tiny sample)
+            imgs_sorted = sorted(imgs, key=lambda p: p.stat().st_size, reverse=True)
+            return imgs_sorted[0]
+    # fallback
+    return MAP_DIR / "school-map.jpg"
+
+MAP_FILE = choose_map_file()
 
 # load plants
 try:
@@ -23,6 +37,8 @@ if MAP_FILE.exists():
         mime = "image/jpeg"
         if MAP_FILE.suffix.lower() == ".png":
             mime = "image/png"
+        elif MAP_FILE.suffix.lower() == ".svg":
+            mime = "image/svg+xml"
         map_data_url = f"data:{mime};base64," + base64.b64encode(b).decode("ascii")
     except Exception:
         map_data_url = None
@@ -31,7 +47,6 @@ if MAP_FILE.exists():
 plants_json_js = json.dumps(plants, ensure_ascii=False)
 map_data_url_js = json.dumps(map_data_url)  # "null" or quoted string
 
-# HTML 템플릿 (파이썬 f-string 사용하지 않음 -> 중괄호 충돌 방지)
 html = """
 <!doctype html>
 <html lang="ko">
@@ -97,8 +112,11 @@ html = """
   }
 
   function showPlant(p){
+    // 사진이 로컬 경로로 깨지면 안내 문구만 표시
+    const photoTag = (p.photo && p.photo.length>0) ? ('<img src="'+escapeHtml(p.photo)+'" alt="'+escapeHtml(p.name)+' 사진" style="max-width:100%;margin-bottom:8px" onerror="this.style.display=\\'none\\';document.getElementById(\\'photoWarn\\').style.display=\\'block\\';"/>') : '';
     details.innerHTML = '<h3>'+escapeHtml(p.name)+'</h3>'
-      + (p.photo ? '<img src="'+escapeHtml(p.photo)+'" alt="'+escapeHtml(p.name)+' 사진" style="max-width:100%;margin-bottom:8px"/>' : '')
+      + photoTag
+      + '<div id="photoWarn" style="display:none;color:#c33;font-size:13px;margin-bottom:6px;">사진을 불러오지 못했습니다. (사진 파일이 누락되었거나 경로가 잘못되었습니다)</div>'
       + '<p>'+escapeHtml(p.description || '설명이 없습니다.')+'</p>';
   }
 
@@ -118,6 +136,5 @@ html = """
 </body>
 </html>
 """
-
 # render in Streamlit
 st.components.v1.html(html, height=800, scrolling=True)
