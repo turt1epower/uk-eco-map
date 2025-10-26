@@ -1,20 +1,11 @@
 [
   {
-    "id": "Double-Columbine",
-    "name": "겹매발톱",
-    "label": "겹",
-    "photo": "photo/Double-Columbine/...",
-    "description": "항시 푸른 잎을 자랑하는 대표적인 사계절 나무인 소나무는 언제나 든든하게 우리 학교를 지키고 있어요.",
-    "x": 45,
-    "y": 30
-  },
-  {
-    "id": "cherry",
-    "name": "벚나무",
-    "label": "벚",
-    "photo": "photo/cherry/1.jpg",
-    "description": "봄에 예쁜 꽃을 피우는 벚나무입니다.",
-    "x": 70,
-    "y": 55
+    "id": "Shepherds-purse",
+    "name": "꽃다지",
+    "label": "꽃",
+    "photo": "photo/Shepherds-purse/...",
+    "description": "봄에 들판에서 자주 볼 수 있는 작은 흰 꽃이에요. 하트 모양 씨주머니가 달려 있어서 귀엽지요.",
+    "x": 98.44,
+    "y": 78.95
   }
 ]
