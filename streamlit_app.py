@@ -1,8 +1,123 @@
 import streamlit as st
+from pathlib import Path
+import json
+import base64
 
-st.title("학교 생태지도 — 배포 테스트")
-st.write("이 메시지가 보이면 Streamlit 실행은 정상입니다.")
+st.set_page_config(page_title="학교 생태지도", layout="wide")
+
+ROOT = Path(__file__).resolve().parents[0]
+DATA_FILE = ROOT / "data" / "plants.json"
+MAP_FILE = ROOT / "map" / "school-map.jpg"
+
+# load plants
 try:
-    st.image("map/school-map.jpg", caption="map/school-map.jpg", use_column_width=True)
-except Exception as e:
-    st.write("map 이미지 로드 실패:", e)
+    plants = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+except Exception:
+    plants = []
+
+# prepare map image data url if available
+map_data_url = None
+if MAP_FILE.exists():
+    try:
+        b = MAP_FILE.read_bytes()
+        mime = "image/jpeg"
+        if MAP_FILE.suffix.lower() == ".png":
+            mime = "image/png"
+        map_data_url = f"data:{mime};base64," + base64.b64encode(b).decode("ascii")
+    except Exception:
+        map_data_url = None
+
+# build HTML that renders the interactive map and markers (uses embedded plants data)
+plants_json = json.dumps(plants, ensure_ascii=False)
+
+html = f"""
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>학교 생태지도 (embedded)</title>
+<style>
+  body {{ font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Apple SD Gothic Neo", sans-serif; margin:0; }}
+  .app {{ display:flex; height:100vh; }}
+  .map-wrap {{ position:relative; flex:1; overflow:auto; background:#f0f0f0; display:flex; align-items:center; justify-content:center; padding:12px; }}
+  .map-img {{ max-width:100%; height:auto; display:block; position:relative; cursor:crosshair; }}
+  .marker {{
+    position:absolute; transform:translate(-50%,-100%);
+    width:28px; height:28px; border-radius:50%;
+    background:rgba(34,139,34,0.95); border:2px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:700; cursor:pointer;
+  }}
+  .marker:after {{ content:""; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%); width:2px; height:8px; background:rgba(34,139,34,0.95); }}
+  .panel {{ width:320px; max-width:40%; background:#fff; border-left:1px solid #e0e0e0; padding:16px; box-sizing:border-box; overflow:auto; }}
+  .panel h2 {{ margin:0 0 8px 0; font-size:18px; }}
+  .panel img {{ width:100%; height:auto; border-radius:6px; margin-bottom:8px; }}
+  .hint {{ color:#666; font-size:14px; }}
+  @media(max-width:700px){{ .panel{{ position:fixed; right:0; top:0; bottom:0; z-index:30; width:90%; }} }}
+</style>
+</head>
+<body>
+<div style="display:flex; height:100vh;">
+  <div class="map-wrap" id="mapWrap">
+    <img id="mapImg" class="map-img" src="{map_data_url if map_data_url else 'map/school-map.jpg'}" alt="학교 지도" />
+  </div>
+  <aside class="panel" id="panel">
+    <h2>식물 정보</h2>
+    <div id="details"><p class="hint">지도에서 식물 마커를 클릭하세요.</p></div>
+  </aside>
+</div>
+
+<script>
+(function(){
+  const plants = {plants_json};
+  const mapWrap = document.getElementById('mapWrap');
+  const mapImg = document.getElementById('mapImg');
+  const details = document.getElementById('details');
+
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+
+  function createMarker(p){
+    const m = document.createElement('button');
+    m.className = 'marker';
+    m.type = 'button';
+    m.title = p.name;
+    m.style.left = p.x + '%';
+    m.style.top = p.y + '%';
+    m.dataset.id = p.id;
+    m.textContent = p.label || '●';
+    m.addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      showPlant(p);
+    });
+    mapWrap.appendChild(m);
+  }
+
+  function showPlant(p){
+    details.innerHTML = '<h3>'+escapeHtml(p.name)+'</h3>'
+      + (p.photo ? '<img src="'+escapeHtml(p.photo)+'" alt="'+escapeHtml(p.name)+' 사진" style="max-width:100%;margin-bottom:8px"/>' : '')
+      + '<p>'+escapeHtml(p.description || '설명이 없습니다.')+'</p>';
+  }
+
+  // add markers after image loaded (so size is stable)
+  if (mapImg.complete) {
+    plants.forEach(createMarker);
+  } else {
+    mapImg.onload = ()=> plants.forEach(createMarker);
+    mapImg.onerror = ()=> plants.forEach(createMarker);
+  }
+
+  // click outside hides panel
+  mapWrap.addEventListener('click', ()=> {
+    details.innerHTML = '<p class="hint">지도에서 식물 마커를 클릭하세요.</p>';
+  });
+
+})();
+</script>
+</body>
+</html>
+"""
+
+# render in Streamlit
+st.components.v1.html(html, height=800, scrolling=True)
