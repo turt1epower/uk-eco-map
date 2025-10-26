@@ -48,7 +48,7 @@
     "id": "Korean-early-lilac",
     "name": "수수꽃다리",
     "label": "수",
-    "photo": "photo/Korean-early-lilac/Korean-early-lilac-1.JPG",
+    "photo": "photo/Korean-early-lilac/Korean-early-lilac-2.JPG",
     "description": "봄이 연보랏빛 꽃송이가 피며 향기가 멀리 퍼져요. '라일락'의 한 종류랍니다.",
     "x": 32.38,
     "y": 35.93
@@ -57,16 +57,16 @@
     "id": "Pine-tree",
     "name": "소나무",
     "label": "소",
-    "photo": "photo/Pine-tree/Pine-tree-1.JPG",
+    "photo": "photo/Pine-tree/Pine-tree-2.JPG",
     "description": "사계절 내내 푸른 잎을 간직한 나무예요. 곧고 푸른 모습이 든든함을 줍니다.",
     "x": 18.2,
     "y": 57.48
   },
   {
-    "id": "Tree-peony",
+    "id": "Tree-Peony",
     "name": "모란",
     "label": "모",
-    "photo": "photo/Tree-peony/Tree-peony-4.JPG",
+    "photo": "photo/Tree-Peony/Tree-Peony-4.JPG",
     "description": "'꽃의 왕'이라고 불릴 만큼 크고 화려한 꽃이에요. 봄에 피어 짙은 향기와 고운 자태를 뽐냅니다.",
     "x": 35.98,
     "y": 57.33
