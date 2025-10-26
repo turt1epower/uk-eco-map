@@ -2,6 +2,7 @@ import streamlit as st
 from pathlib import Path
 import json
 import base64
+import mimetypes
 
 st.set_page_config(page_title="학교 생태지도", layout="wide")
 
@@ -15,10 +16,8 @@ def choose_map_file():
     if MAP_DIR.exists():
         imgs = [p for p in MAP_DIR.iterdir() if p.suffix.lower() in exts and p.is_file()]
         if imgs:
-            # pick largest (prefer real upload over tiny sample)
             imgs_sorted = sorted(imgs, key=lambda p: p.stat().st_size, reverse=True)
             return imgs_sorted[0]
-    # fallback
     return MAP_DIR / "school-map.jpg"
 
 MAP_FILE = choose_map_file()
@@ -28,6 +27,36 @@ try:
     plants = json.loads(DATA_FILE.read_text(encoding="utf-8"))
 except Exception:
     plants = []
+
+# Build a mapping of plant id -> photo data URI (or absolute URL) so the embedded HTML can display images
+photo_map = {}
+for p in plants:
+    pid = p.get("id")
+    photo = p.get("photo") or ""
+    if not pid:
+        continue
+    # If photo is already an absolute URL, use it directly
+    if photo.startswith("http://") or photo.startswith("https://") or photo.startswith("data:"):
+        photo_map[pid] = photo
+        continue
+    # try repo-relative path
+    src = (ROOT / photo)
+    if not src.exists():
+        # try common folders
+        alt = ROOT / "photo" / Path(photo).name
+        if alt.exists():
+            src = alt
+    if src.exists():
+        try:
+            b = src.read_bytes()
+            mime, _ = mimetypes.guess_type(str(src))
+            if not mime:
+                mime = "image/jpeg"
+            data_uri = "data:{};base64,".format(mime) + base64.b64encode(b).decode("ascii")
+            photo_map[pid] = data_uri
+        except Exception:
+            # leave absent; frontend will show warning
+            pass
 
 # prepare map image data url if available
 map_data_url = None
@@ -45,6 +74,7 @@ if MAP_FILE.exists():
 
 # 안전하게 JS에 주입할 JSON 문자열 생성
 plants_json_js = json.dumps(plants, ensure_ascii=False)
+photo_map_js = json.dumps(photo_map, ensure_ascii=False)
 map_data_url_js = json.dumps(map_data_url)  # "null" or quoted string
 
 html = """
@@ -89,6 +119,7 @@ html = """
 <script>
 (function(){
   const plants = """ + plants_json_js + """;
+  const photoMap = """ + photo_map_js + """;
   const mapWrap = document.getElementById('mapWrap');
   const mapImg = document.getElementById('mapImg');
   const details = document.getElementById('details');
@@ -112,8 +143,10 @@ html = """
   }
 
   function showPlant(p){
-    // 사진이 로컬 경로로 깨지면 안내 문구만 표시
-    const photoTag = (p.photo && p.photo.length>0) ? ('<img src="'+escapeHtml(p.photo)+'" alt="'+escapeHtml(p.name)+' 사진" style="max-width:100%;margin-bottom:8px" onerror="this.style.display=\\'none\\';document.getElementById(\\'photoWarn\\').style.display=\\'block\\';"/>') : '';
+    // 우선 photoMap에 data URI가 있는지 확인
+    const pm = photoMap[p.id];
+    const photoSrc = pm || p.photo || '';
+    const photoTag = (photoSrc && photoSrc.length>0) ? ('<img src="'+escapeHtml(photoSrc)+'" alt="'+escapeHtml(p.name)+' 사진" style="max-width:100%;margin-bottom:8px" onerror="this.style.display=\\'none\\';document.getElementById(\\'photoWarn\\').style.display=\\'block\\';"/>') : '';
     details.innerHTML = '<h3>'+escapeHtml(p.name)+'</h3>'
       + photoTag
       + '<div id="photoWarn" style="display:none;color:#c33;font-size:13px;margin-bottom:6px;">사진을 불러오지 못했습니다. (사진 파일이 누락되었거나 경로가 잘못되었습니다)</div>'
