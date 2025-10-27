@@ -2,7 +2,7 @@
   {
     "id": "Shepherds-purse",
     "name": "꽃다지",
-    "label": "꽃",
+    "label": "1",
     "photo": "photo/Shepherds-purse/Shepherds-purse-1.JPG",
     "description": "봄에 들판에서 자주 볼 수 있는 작은 흰 꽃이에요. 하트 모양 씨주머니가 달려 있어서 귀엽지요.",
     "x": 98.44,
@@ -11,7 +11,7 @@
   {
     "id": "Crapapple",
     "name": "꽃사과",
-    "label": "꽃",
+    "label": "2",
     "photo": "photo/Crapapple/Crapapple-1.JPG",
     "description": "봄에는 분홍빛 꽃, 가을에는 작은 열매가 열리는 나무예요. 향긋한 꽃과 알록달록한 열매가 모두 아름답습니다.",
     "x": 89.06,
@@ -20,7 +20,7 @@
   {
     "id": "Panicled-Hydrangea",
     "name": "나무수국",
-    "label": "나",
+    "label": "3",
     "photo": "photo/Panicled-Hydrangea/Panicled-Hydrangea-1.JPG",
     "description": "하얗고 풍성한 꽃송이가 여름 내내 피어납니다. 시간이 지나며 꽃 색이 분홍빛으로 물드는 게 특징이에요.",
     "x": 65.31,
@@ -29,7 +29,7 @@
   {
     "id": "Rose",
     "name": "장미",
-    "label": "장",
+    "label": "4",
     "photo": "photo/Rose/Rose-1.JPG",
     "description": "다양한 색과 향기로 사람들의 마음을 사로잡는 꽃이에요. 사랑의 상징으로 가장 널리 알려졌지요.",
     "x": 59.37,
@@ -38,8 +38,8 @@
   {
     "id": "Rowan-tree",
     "name": "마가목",
-    "label": "마",
-    "photo": "photo/Rowan-tree/Rowan-tree-1.JPG",
+    "label": "5",
+    "photo": "photo/Rowan-tree/Rowan-tree-2.JPG",
     "description": "산속에서 자라는 나무로, 가을이면 붉은 열매가 송이송이 맺혀요. 새들이 열매를 좋아해요.",
     "x": 13.12,
     "y": 26.81
@@ -47,7 +47,7 @@
   {
     "id": "Korean-early-lilac",
     "name": "수수꽃다리",
-    "label": "수",
+    "label": "6",
     "photo": "photo/Korean-early-lilac/Korean-early-lilac-2.JPG",
     "description": "봄이 연보랏빛 꽃송이가 피며 향기가 멀리 퍼져요. '라일락'의 한 종류랍니다.",
     "x": 32.38,
@@ -56,7 +56,7 @@
   {
     "id": "Pine-tree",
     "name": "소나무",
-    "label": "소",
+    "label": "7",
     "photo": "photo/Pine-tree/Pine-tree-2.JPG",
     "description": "사계절 내내 푸른 잎을 간직한 나무예요. 곧고 푸른 모습이 든든함을 줍니다.",
     "x": 18.2,
@@ -65,7 +65,7 @@
   {
     "id": "Tree-Peony",
     "name": "모란",
-    "label": "모",
+    "label": "8",
     "photo": "photo/Tree-Peony/Tree-Peony-4.JPG",
     "description": "'꽃의 왕'이라고 불릴 만큼 크고 화려한 꽃이에요. 봄에 피어 짙은 향기와 고운 자태를 뽐냅니다.",
     "x": 35.98,
@@ -74,7 +74,7 @@
   {
     "id": "Peony",
     "name": "작약",
-    "label": "작",
+    "label": "9",
     "photo": "photo/Peony/Peony-1.JPG",
     "description": "커다란 꽃송이가 풍성하게 피어요. 향기가 좋고 오래전부터 사랑받은 꽃이에요.",
     "x": 44.02,
@@ -83,7 +83,7 @@
   {
     "id": "Crape-myrtle",
     "name": "배롱나무",
-    "label": "배",
+    "label": "10",
     "photo": "photo/Crape-myrtle/Crape-myrtle-1.JPG",
     "description": "여름 내내 꽃이 지지 않아 '백일홍'이라 불려요. 붉고 자주빛 꽃이 길게 피어 무더위를 잊게 해요.",
     "x": 54.6,
@@ -92,7 +92,7 @@
   {
     "id": "King-cherry",
     "name": "왕벚나무",
-    "label": "벚",
+    "label": "11",
     "photo": "photo/King-cherry/King-cherry-2.JPG",
     "description": "봄바람이 불면 하얗고 분홍빛 꽃비가 흩날려요. 짧지만 눈부신 봄의 순간을 선물해요.",
     "x": 63.7,
@@ -101,7 +101,7 @@
   {
     "id": "Tulip",
     "name": "튤립",
-    "label": "튤",
+    "label": "12",
     "photo": "photo/Tulip/Tulip-7.JPG",
     "description": "붉고 노란 색의 꽃이 봄을 화사하게 물들이지요. 햇살을 받으면 꽃잎을 활짝 펼쳐요.",
     "x": 77.57,
@@ -110,7 +110,7 @@
   {
     "id": "Chinese-Quince",
     "name": "모과나무",
-    "label": "모",
+    "label": "13",
     "photo": "photo/Chinese-Quince/Chinese-Quince-5.JPG",
     "description": "노란 열매에서 향긋한 냄새가 나요. 가을이면 열매가 익어 방 안을 향기로 가득 채웁니다.",
     "x": 71.22,
@@ -119,7 +119,7 @@
   {
     "id": "Cherry-silverberry",
     "name": "보리수",
-    "label": "보",
+    "label": "14",
     "photo": "photo/Cherry-silverberry/Cherry-silverberry-1.JPG",
     "description": "은빛 잎과 빨간 열매가 예쁜 나무예요. 여름엔 작은 향기로운 꽃도 피워요.",
     "x": 48.15,
@@ -128,7 +128,7 @@
   {
     "id": "Korean-dongwood",
     "name": "산딸나무",
-    "label": "산",
+    "label": "15",
     "photo": "photo/Korean-dongwood/Korean-dongwood-3.JPG",
     "description": "여름에 흰 꽃이 피고 가을에는 딸기처럼 생긴 붉은 열매가 열려요. 숲속에서 빛나는 나무예요.",
     "x": 41.27,
@@ -137,7 +137,7 @@
   {
     "id": "Plum-blossom",
     "name": "매화나무",
-    "label": "매",
+    "label": "16",
     "photo": "photo/Plum-blossom/Plum-blossom-1.JPG",
     "description": "겨울 끝에 향기로운 꽃을 피워 봄이 오는 길을 알려줘요. 매화의 향기는 오랜 세월 사랑받았답니다.",
     "x": 6.03,
@@ -146,7 +146,7 @@
   {
     "id": "Cornelian-cherry",
     "name": "산수유",
-    "label": "산",
+    "label": "17",
     "photo": "photo/Cornelian-cherry/Cornelian-cherry-3.JPG",
     "description": "이른 봄, 잎보다 먼저 노란 꽃을 피워요. 가을에는 빨간 열매가 익어 참새들이 찾아와요.",
     "x": 96.19,
@@ -155,7 +155,7 @@
   {
     "id": "Maple",
     "name": "단풍",
-    "label": "단",
+    "label": "18",
     "photo": "photo/Maple/Maple-3.JPG",
     "description": "가을이 되면 잎이 빨갛고 노랗게 물들어요. 단풍잎의 색깔 변화는 계절의 변화를 알려주는 신호예요.",
     "x": 62.96,

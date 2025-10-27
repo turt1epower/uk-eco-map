@@ -119,8 +119,9 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,'Segoe UI',Ro
 .map-area{flex:1;position:relative;display:flex;align-items:flex-start;justify-content:center;overflow:hidden;background:#e9eef0;border-radius:6px;padding:8px 8px 20px 8px} /* 상단으로 올리도록 align-items:flex-start 및 하단 여유 */
 .viewport{position:relative;touch-action:none;cursor:grab;display:inline-block}
 .map-img{display:block;width:100%;height:auto;user-select:none;pointer-events:none}
-.marker{position:absolute;transform:translate(-50%,-100%);width:18px;height:18px;border-radius:50%;background:rgba(34,139,34,0.95);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:10px;cursor:pointer;pointer-events:auto}
-.marker:after{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:2px;height:6px;background:rgba(34,139,34,0.95)}
+/* 마커 크기를 원래(더 크게) 복원 */
+.marker{position:absolute;transform:translate(-50%,-100%);width:28px;height:28px;border-radius:50%;background:rgba(34,139,34,0.95);border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:13px;cursor:pointer;pointer-events:auto}
+.marker:after{content:'';position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);width:3px;height:8px;background:rgba(34,139,34,0.95)}
 .sidebar{width:360px;min-width:260px;background:#fff;border-radius:6px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.08);overflow:auto}
 .sidebar h2{margin:0 0 8px 0;font-size:18px}
 .sidebar select{width:100%;padding:8px;margin-bottom:8px;border-radius:6px;border:1px solid #ddd;font-size:14px}
