@@ -3,6 +3,8 @@ from pathlib import Path
 import json
 import base64
 import mimetypes
+from io import BytesIO
+from PIL import Image
 
 st.set_page_config(page_title="운광초등학교 생태지도", layout="wide")
 
@@ -20,6 +22,38 @@ def choose_map_file():
 
 MAP_FILE = choose_map_file()
 
+# utility: load image file and produce a data:...;base64,... URL (with resize/compression)
+def make_data_url(path: Path, max_width: int = 1600, quality: int = 80) -> str | None:
+    try:
+        with Image.open(path) as img:
+            # convert animated/webp with frames -> use first frame
+            if getattr(img, "is_animated", False):
+                img = img.convert("RGBA")
+            orig_w, orig_h = img.size
+            if orig_w > max_width:
+                new_h = int(orig_h * (max_width / orig_w))
+                img = img.resize((max_width, new_h), Image.LANCZOS)
+            fmt = img.format if img.format else "PNG"
+            buf = BytesIO()
+            save_kwargs = {}
+            if fmt.upper() in ("JPEG", "JPG"):
+                save_kwargs["quality"] = quality
+                save_fmt = "JPEG"
+            elif fmt.upper() == "WEBP":
+                save_kwargs["quality"] = quality
+                save_fmt = "WEBP"
+            else:
+                # keep PNG for transparency
+                save_fmt = "PNG"
+            img.save(buf, format=save_fmt, **save_kwargs)
+            b = buf.getvalue()
+        mime, _ = mimetypes.guess_type(path.as_posix())
+        if not mime:
+            mime = "image/png" if save_fmt == "PNG" else f"image/{save_fmt.lower()}"
+        return "data:" + mime + ";base64," + base64.b64encode(b).decode("ascii")
+    except Exception:
+        return None
+
 # load plants
 try:
     plants = json.loads(DATA_FILE.read_text(encoding="utf-8"))
@@ -33,6 +67,7 @@ for p in plants:
     photo = (p.get("photo") or "").strip()
     if not pid or not photo:
         continue
+    # Keep external/data URIs as-is
     if photo.startswith(("http://", "https://", "data:")):
         photo_map[pid] = photo
         continue
@@ -46,24 +81,25 @@ for p in plants:
         if alt2.exists():
             src = alt2
     if src.exists():
-        try:
-            b = src.read_bytes()
-            mime, _ = mimetypes.guess_type(str(src))
-            if not mime:
-                mime = "image/jpeg"
-            photo_map[pid] = "data:{};base64,".format(mime) + base64.b64encode(b).decode("ascii")
-        except Exception:
-            pass
+        # create reasonable-sized data URL (sidebar images)
+        data_url = make_data_url(src, max_width=800, quality=80)
+        if data_url:
+            photo_map[pid] = data_url
+        else:
+            # fallback to relative path (best-effort)
+            try:
+                photo_map[pid] = str(src.relative_to(ROOT).as_posix())
+            except Exception:
+                photo_map[pid] = photo
 
-# prepare map data URI
+# prepare map data URI (resized/compressed)
 map_data_url = None
 if MAP_FILE.exists():
     try:
-        b = MAP_FILE.read_bytes()
-        mime, _ = mimetypes.guess_type(str(MAP_FILE))
-        if not mime:
-            mime = "image/jpeg"
-        map_data_url = "data:{};base64,".format(mime) + base64.b64encode(b).decode("ascii")
+        # create a data URL for the map image (limit width to keep payload reasonable)
+        map_data_url = make_data_url(MAP_FILE, max_width=1600, quality=80)
+        if map_data_url is None:
+            map_data_url = str(MAP_FILE.relative_to(ROOT).as_posix())
     except Exception:
         map_data_url = None
 
